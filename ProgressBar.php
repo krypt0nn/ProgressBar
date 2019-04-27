@@ -26,6 +26,8 @@ class ProgressBar
 {
     protected $maxCount;
     protected $length;
+    protected $prefix;
+    protected $postfix;
     protected $progressChar;
     protected $skeleton; // Скелет прогресс бара
     protected $exp; // Экспонента прогресса. Формально - количество символов, на которое будет изменяться прогресс бар за 1 процент
@@ -52,7 +54,7 @@ class ProgressBar
      * 
      */
 
-    public function __construct ($maxCount, $length, $progressChar = '█')
+    public function __construct ($maxCount, $length, $prefix = '', $postfix = '', $progressChar = '█')
     {
         if (!is_numeric ($maxCount) || $maxCount < 0)
             throw new \Exception ('$maxCount param must be a non-negative number');
@@ -63,15 +65,18 @@ class ProgressBar
         if (!is_string ($progressChar))
             throw new \Exception ('$progressChar param must be an symbol');
 
-        $this->maxCount = $maxCount;
-        $this->length = $length;
+        $this->maxCount     = $maxCount;
+        $this->length       = $length;
+        $this->prefix       = $prefix;
+        $this->postfix      = $postfix;
         $this->progressChar = $progressChar;
-        $this->skeleton = '0% |';
+
+        $this->skeleton = $prefix .'0% |';
 
         for ($i = 0; $i < $length; ++$i)
             $this->skeleton .= ' ';
 
-        $this->skeleton .= '|';
+        $this->skeleton .= '|'. $postfix;
         $this->exp = $length / 100;
 
         echo $this->skeleton;
@@ -98,7 +103,7 @@ class ProgressBar
         
         $permLength = strlen ($this->skeleton);
 
-        $this->skeleton = ($process = (int)($position / $this->maxCount * 100)) .'% |';
+        $this->skeleton = $this->prefix . ($process = (int)($position / $this->maxCount * 100)) .'% |';
         
         $processExp = $process * $this->exp;
 
@@ -106,7 +111,7 @@ class ProgressBar
             $this->skeleton .= $i < $processExp ?
                 $this->progressChar : ' ';
 
-        $this->skeleton .= '|';
+        $this->skeleton .= '|'. $this->postfix;
 
         $this->offset ($permLength);
         echo $this->skeleton;
