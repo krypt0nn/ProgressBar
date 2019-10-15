@@ -31,21 +31,25 @@ class ProgressBar
     protected $progressChar;
     protected $progressSubChar;
     protected $skeleton; // Скелет прогресс бара
-    protected $exp; // Экспонента прогресса. Формально - количество символов, на которое будет изменяться прогресс бар за 1 процент
+    protected $exp; // Экспонента прогресса. Фактически - количество символов, на которое будет изменяться прогресс бар за 1 процент
 
     /**
      * Конструктор прогресс бара
      * 
      * @param double $maxCount - максимальное число операндов до достижения цели
      * @param int $length - длина прогресс бара (в символах, учитывается только активное поле символов)
-     * @param string $prefix - префикс прогресс бара
-     * @param string $postfix - постфикс прогресс бара
+     * @param mixed $prefix - префикс прогресс бара
+     * @param mixed $postfix - постфикс прогресс бара
      * @param string $progressChar - символ, которым будет заполняться прогресс бар
      * @param string $progressSubChar - половина предыдущего символа (для отображения половины процента)
      * 
      * @throws \Exception - выбрасывает исключения при аллогичных значениях параметров
      * 
      * После инициализации класса сразу же отрисовывается пустой прогресс бар
+     * 
+     * $prefix и $postfix могут быть строками или коллбэками. В качестве коллбэков они принимают аргументы:
+     * 1. Текущая позиция
+     * 2. Максимальная позиция
      * 
      * @example:
      * 
@@ -55,9 +59,7 @@ class ProgressBar
      *     $progress->update ($i);
      * 
      * $progress->clear (); // Удаляем прогресс бар после отработки
-     * 
      */
-
     public function __construct ($maxCount, $length, $prefix = '', $postfix = '', $progressChar = '█', $progressSubChar = '▌')
     {
         if (!is_numeric ($maxCount) || $maxCount < 0)
@@ -79,12 +81,15 @@ class ProgressBar
         $this->progressChar    = $progressChar;
         $this->progressSubChar = $progressSubChar;
 
-        $this->skeleton = $prefix .'0% |';
+        $this->skeleton = (is_callable ($prefix) ?
+            $prefix (0, $maxCount) : $prefix) .'0% |';
 
         for ($i = 0; $i < $length; ++$i)
             $this->skeleton .= ' ';
 
-        $this->skeleton .= '|'. $postfix;
+        $this->skeleton .= '|'. (is_callable ($postfix) ?
+            $postfix (0, $maxCount) : $postfix);
+        
         $this->exp = $length / 100;
 
         echo $this->skeleton;
@@ -98,9 +103,7 @@ class ProgressBar
      * @return int - возвращает процентное соотношение прогресс бара
      * 
      * @throws \Exception - выбрасывает исключения при неверных значениях параметра $position
-     * 
      */
-
     public function update ($position)
     {
         if ($position > $this->maxCount)
@@ -108,19 +111,21 @@ class ProgressBar
 
         if ($position < 0)
             throw new \Exception ('$position param must be upper than zero');
-        
-        $permLength = strlen ($this->skeleton);
 
-        $this->skeleton = $this->prefix . ($process = (int)($floatProcess = $position / $this->maxCount * 100)) .'% |';
+        $this->skeleton = (is_callable ($this->prefix) ?
+            call_user_func_array ($this->prefix, array ($position, $this->maxCount)) : $this->prefix) . ($process = (int)($floatProcess = $position / $this->maxCount * 100)) .'% |';
+        
         $this->skeleton .= str_repeat ($this->progressChar, $processExp = $process * $this->exp);
 
         if ($floatProcess - $process >= 0.5)
             $this->skeleton .= $this->progressSubChar;
 
         $this->skeleton .= str_repeat (' ', $this->length - $processExp);
-        $this->skeleton .= '|'. $this->postfix;
+        
+        $this->skeleton .= '|'. (is_callable ($this->postfix) ?
+            call_user_func_array ($this->postfix, array ($position, $this->maxCount)) : $this->postfix);
 
-        $this->offset ($permLength);
+        $this->offset (strlen ($this->skeleton));
         echo $this->skeleton;
 
         return $process;
@@ -129,9 +134,7 @@ class ProgressBar
     /**
      * Очистка прогресс бара
      * Удаляет прогресс бар из консоли, заполняя его место пробелами и смещая указатель в начало бывшего прогресс бара
-     * 
      */
-
     public function clear ()
     {
         $this->offset ($length = strlen ($this->skeleton));
@@ -145,9 +148,7 @@ class ProgressBar
      * Смещение указателя на $length символов
      * 
      * @param int $length - количество символов для смещения
-     * 
      */
-
     protected function offset ($length)
     {
         for ($i = 0; $i < $length; ++$i)
