@@ -29,7 +29,6 @@ class ProgressBar
     protected $prefix;
     protected $postfix;
     protected $progressChar;
-    protected $progressSubChar;
     protected $skeleton; // Скелет прогресс бара
     protected $exp; // Экспонента прогресса. Фактически - количество символов, на которое будет изменяться прогресс бар за 1 процент
 
@@ -41,7 +40,6 @@ class ProgressBar
      * @param mixed $prefix - префикс прогресс бара
      * @param mixed $postfix - постфикс прогресс бара
      * @param string $progressChar - символ, которым будет заполняться прогресс бар
-     * @param string $progressSubChar - половина предыдущего символа (для отображения половины процента)
      * 
      * @throws \Exception - выбрасывает исключения при аллогичных значениях параметров
      * 
@@ -60,7 +58,7 @@ class ProgressBar
      * 
      * $progress->clear (); // Удаляем прогресс бар после отработки
      */
-    public function __construct ($maxCount, $length, $prefix = '', $postfix = '', $progressChar = '█', $progressSubChar = '▌')
+    public function __construct ($maxCount, $length, $prefix = '', $postfix = '', $progressChar = '█')
     {
         if (!is_numeric ($maxCount) || $maxCount < 0)
             throw new \Exception ('$maxCount param must be a non-negative number');
@@ -71,15 +69,11 @@ class ProgressBar
         if (!is_string ($progressChar))
             throw new \Exception ('$progressChar param must be an symbol');
 
-        if (!is_string ($progressSubChar))
-            throw new \Exception ('$progressSubChar param must be an symbol');
-
         $this->maxCount        = $maxCount;
         $this->length          = $length;
         $this->prefix          = $prefix;
         $this->postfix         = $postfix;
         $this->progressChar    = $progressChar;
-        $this->progressSubChar = $progressSubChar;
 
         $this->skeleton = (is_callable ($prefix) ?
             $prefix (0, $maxCount) : $prefix) .'0% |';
@@ -100,11 +94,11 @@ class ProgressBar
      * 
      * @param double $position - позиция прогресс бара
      * 
-     * @return int - возвращает процентное соотношение прогресс бара
+     * @return float - возвращает процентное соотношение прогресс бара
      * 
      * @throws \Exception - выбрасывает исключения при неверных значениях параметра $position
      */
-    public function update ($position)
+    public function update ($position): float
     {
         if ($position > $this->maxCount)
             throw new \Exception ('$position param mustn\'t be upper than $maxCount');
@@ -112,23 +106,26 @@ class ProgressBar
         if ($position < 0)
             throw new \Exception ('$position param must be upper than zero');
 
+        $this->offset ($current_length = strlen ($this->skeleton));
+
+        $process = (int)($floatProcess = $position / $this->maxCount * 100);
+
         $this->skeleton = (is_callable ($this->prefix) ?
-            call_user_func_array ($this->prefix, array ($position, $this->maxCount)) : $this->prefix) . ($process = (int)($floatProcess = $position / $this->maxCount * 100)) .'% |';
+            call_user_func_array ($this->prefix, array ($position, $this->maxCount)) : $this->prefix) .
+            str_repeat (' ', 3 - strlen ($process)) . $process .'% |';
         
         $this->skeleton .= str_repeat ($this->progressChar, $processExp = $process * $this->exp);
-
-        if ($floatProcess - $process >= 0.5)
-            $this->skeleton .= $this->progressSubChar;
 
         $this->skeleton .= str_repeat (' ', $this->length - $processExp);
         
         $this->skeleton .= '|'. (is_callable ($this->postfix) ?
             call_user_func_array ($this->postfix, array ($position, $this->maxCount)) : $this->postfix);
 
-        $this->offset (strlen ($this->skeleton));
-        echo $this->skeleton;
+        echo $this->skeleton . (($length = strlen ($this->skeleton)) < $current_length ?
+            str_repeat (' ', $current_length - $length) .
+            str_repeat (chr (8), $current_length - $length) : '');
 
-        return $process;
+        return $floatProcess;
     }
 
     /**
@@ -151,7 +148,6 @@ class ProgressBar
      */
     protected function offset ($length)
     {
-        for ($i = 0; $i < $length; ++$i)
-            echo chr (8);
+        echo str_repeat (chr (8), (int) $length);
     }
 }
