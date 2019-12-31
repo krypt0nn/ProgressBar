@@ -32,6 +32,8 @@ class ProgressBar
     protected $skeleton; // Скелет прогресс бара
     protected $exp; // Экспонента прогресса. Фактически - количество символов, на которое будет изменяться прогресс бар за 1 процент
 
+    protected $length_function; // Функция проверки длины строки
+
     /**
      * Конструктор прогресс бара
      * 
@@ -76,14 +78,15 @@ class ProgressBar
         $this->progressChar    = $progressChar;
 
         $this->skeleton = (is_callable ($prefix) ?
-            $prefix (0, $maxCount) : $prefix) .'0% |';
+            $prefix (0, $maxCount) : $prefix) .'0% |'.
 
-        for ($i = 0; $i < $length; ++$i)
-            $this->skeleton .= ' ';
-
-        $this->skeleton .= '|'. (is_callable ($postfix) ?
-            $postfix (0, $maxCount) : $postfix);
+            str_repeat (' ', $length) .'|'. 
+            
+            (is_callable ($postfix) ?
+                $postfix (0, $maxCount) : $postfix);
         
+        // Рекомендуется использовать mb_strlen для совместимости с юникод символами
+        $this->length_function = extension_loaded ('mbstring') ? 'mb_strlen' : 'strlen';
         $this->exp = $length / 100;
 
         echo $this->skeleton;
@@ -106,22 +109,21 @@ class ProgressBar
         if ($position < 0)
             throw new \Exception ('$position param must be upper than zero');
 
-        $this->offset ($current_length = strlen ($this->skeleton));
+        $this->offset ($current_length = call_user_func ($this->length_function, $this->skeleton));
 
         $process = (int)($floatProcess = $position / $this->maxCount * 100);
 
         $this->skeleton = (is_callable ($this->prefix) ?
             call_user_func_array ($this->prefix, array ($position, $this->maxCount)) : $this->prefix) .
-            str_repeat (' ', 3 - strlen ($process)) . $process .'% |';
-        
-        $this->skeleton .= str_repeat ($this->progressChar, $processExp = $process * $this->exp);
+			
+            str_repeat (' ', 3 - call_user_func ($this->length_function, $process)) . $process .'% |'.
+			str_repeat ($this->progressChar, $processExp = $process * $this->exp) .
+			str_repeat (' ', $this->length - $processExp) .'|'.
+			
+			(is_callable ($this->postfix) ?
+				call_user_func_array ($this->postfix, array ($position, $this->maxCount)) : $this->postfix);
 
-        $this->skeleton .= str_repeat (' ', $this->length - $processExp);
-        
-        $this->skeleton .= '|'. (is_callable ($this->postfix) ?
-            call_user_func_array ($this->postfix, array ($position, $this->maxCount)) : $this->postfix);
-
-        echo $this->skeleton . (($length = strlen ($this->skeleton)) < $current_length ?
+        echo $this->skeleton . (($length = call_user_func ($this->length_function, $this->skeleton)) < $current_length ?
             str_repeat (' ', $current_length - $length) .
             str_repeat (chr (8), $current_length - $length) : '');
 
@@ -134,7 +136,7 @@ class ProgressBar
      */
     public function clear ()
     {
-        $this->offset ($length = strlen ($this->skeleton));
+        $this->offset ($length = call_user_func ($this->length_function, $this->skeleton));
 
         echo str_repeat (' ', $length);
 
