@@ -7,25 +7,22 @@
 
 use ProgressBar\ProgressBar;
 
-/*
-    666 - количество максимальных итераций прогерсс бара;
-    28 - длина активной области прогресс бара;
-    "   Downloading... " - префикс прогресс бара (то, что пишется перед ним);
-    function (...) - постфикс прогресс бара (то, что пишется после него);
-    "#" - символ итерации прогресс бара (заполнялка активной области);
-
-    Третий, четвёртый и пятый параметры имеют стандартные значения и не является обязательными*
-    Префиксы и постфиксы могут быть указаны как в виде строк, так и в виде коллбэков (текущая позиция, максимальная позиция)**
-*/
-
 $begin = microtime (true);
-
-$progress = new ProgressBar (666, 48, '   Downloading... ', function ($actual, $max) use ($begin)
+$progress = new ProgressBar (666, 48, ' ', function ($actual, $max) use ($begin)
 {
-    return ' ETA: '. round ((microtime (true) - $begin) * ($max - $actual) / max ($actual, 1), 1) .'s';
-}, '#');
+    $seconds  = round (($time = (microtime (true) - $begin)) * ($max - $actual) / max ($actual, 1));
+    $hours    = (int)($seconds / 3600);
+    $minutes  = (int)(($seconds - $hours * 3600) / 60);
+    $seconds -= $hours * 3600 + $minutes * 60;
 
-for ($i = 0; $i <= 666; ++$i)
+    $hours   = $hours   > 9 ? $hours   : "0$hours";
+    $minutes = $minutes > 9 ? $minutes : "0$minutes";
+    $seconds = $seconds > 9 ? $seconds : "0$seconds";
+
+    return " Remained: $hours:$minutes:$seconds, speed: ". round ($actual / $time, 2) .' IPS';
+}, '█');
+
+for ($i = 1; $i <= 666; ++$i)
     $progress->update ($i); // Обновляем прогресс бар
 
 $progress->clear (); // Удаляем прогресс бар из консоли (так же не обязательно)
