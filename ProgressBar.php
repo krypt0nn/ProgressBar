@@ -1,22 +1,21 @@
 <?php
 
-/**
+ /**
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  * 
  * @package     ProgressBar
- * @copyright   2019 Podvirnyy Nikita (KRypt0n_)
- * @license     GNU GPLv3 <https://www.gnu.org/licenses/gpl-3.0.html>
- * @license     Enfesto Studio Group license <https://vk.com/topic-113350174_36400959>
- * @author      Podvirnyy Nikita (KRypt0n_)
+ * @copyright   2019, 2021 Podvirnyy Nikita (Observer KRypt0n_)
+ * @license     GNU GPL-3.0 <https://www.gnu.org/licenses/gpl-3.0.html>
+ * @author      Podvirnyy Nikita (Observer KRypt0n_)
  * 
  * Contacts:
  *
  * Email: <suimin.tu.mu.ga.mi@gmail.com>
- * VK:    vk.com/technomindlp
- *        vk.com/hphp_convertation
+ * VK:    <https://vk.com/technomindlp>
+ *        <https://vk.com/hphp_convertation>
  * 
  */
 
@@ -85,8 +84,10 @@ class ProgressBar
             (is_callable ($postfix) ?
                 $postfix (0, $maxCount) : $postfix);
         
-        // Рекомендуется использовать mb_strlen для совместимости с юникод символами
-        $this->length_function = extension_loaded ('mbstring') ? 'mb_strlen' : 'strlen';
+        // Рекомендуется использовать mb_strlen или iconv_strlen для совместимости с юникод символами
+        $this->length_function = extension_loaded ('mbstring') ? 'mb_strlen' : (
+            extension_loaded ('iconv') ? 'iconv_strlen' : 'strlen');
+        
         $this->exp = $length / 100;
 
         echo $this->skeleton;

@@ -1,0 +1,24 @@
+{
+    "name": "krypt0nn/progressbar",
+    "description": "Simple library to realize progress bar for CLI",
+    "keywords": ["progress bar", "cli"],
+    "version": "1.5.1",
+    "homepage": "https://github.com/KRypt0nn/table",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Nikita Podvirnyy",
+            "email": "suimin.tu.mu.ga.mi@gmail.com",
+            "homepage": "https://github.com/KRypt0nn",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.3"
+    },
+    "autoload": {
+        "files": [
+            "ProgressBar.php"
+        ]
+    }
+}
